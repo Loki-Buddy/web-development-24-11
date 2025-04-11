@@ -16,15 +16,15 @@ db.serialize(() => {
     db.run(`INSERT INTO tiere(tierart,name,krankheit,age,gewicht)
             VALUES ("Hund","Bello","husten",5,12.4);`);
 
-    const selectAllTiereQuery = `SELECT * FROM tiere;`;
+    /* const selectAllTiereQuery = `SELECT * FROM tiere;`;
     db.all(selectAllTiereQuery, (err, rows) => {
         if (err) {
             console.log(err);
         } else {
             console.log(rows);
         }
-    });
-    
+    }); */
+
     process.on("exit", () => {
         db.close();
     });
@@ -46,12 +46,72 @@ app.get("/tiere", (req, res) => {
     });
 });
 
-app.post("/tiere", (req, res) => {
+app.get("/tier/:id", (req, res) => {
+    const id = req.params.id;
+    db.get(`SELECT * FROM tiere WHERE id = ?;`, [id], (err, row) => {
+        if (err) {
+            res.status(404).send("Fehler in deiner Query Anfrage");
+        } else {
+            res.json(row);
+        }
+    });
+})
+
+app.post("/createTier", (req, res) => {
     const { tierart, name, krankheit, age, gewicht } = req.body;
-    db.run(`INSERT INTO tiere (tierart,name,krankheit,age,gewicht) VALUES(?,?,?,?,?);`, [tierart, name, krankheit, age, gewicht]);
-    res.status(201).send("Tier wurde erfolgreich hinzugefügt");
+    db.run(`INSERT INTO tiere (tierart,name,krankheit,age,gewicht) 
+        VALUES(?,?,?,?,?);`, [tierart, name, krankheit, age, gewicht], (err, row) => {
+        if (err) {
+            res.status(404).send("Fehler!!")
+        } else {
+            db.all(`SELECT * FROM tiere`, (err, rows) => {
+                if (err) {
+                    res.status(404).send("Fehler in deiner Query Anfrage");
+                } else {
+                    res.json(rows);
+                }
+            });
+        }
+    });
 });
 
+app.put("/updateTier/:id", (req, res) => {
+    const id = req.params.id;
+    const { tierart, name, krankheit, age, gewicht } = req.body;
+    db.run(
+        `UPDATE tiere 
+        SET tierart = ?, name = ?, krankheit = ?, age = ?, gewicht = ?
+        WHERE id = ?;`, [tierart, name, krankheit, age, gewicht, id], (err, row) => {
+        if (err) {
+            res.status(404).send("Fehler!!")
+        } else {
+            db.all(`SELECT * FROM tiere`, (err, rows) => {
+                if (err) {
+                    res.status(404).send("Fehler in deiner Query Anfrage");
+                } else {
+                    res.json(rows);
+                }
+            });
+        }
+    });
+});
+
+app.delete("/deleteTier/:id", (req, res) => {
+    const id = req.params.id;
+    db.run(`DELETE FROM tiere WHERE id = ?;`, [id], (err, row) => {
+        if (err) {
+            res.status(404).send("Fehler!!")
+        } else {
+            db.all(`SELECT * FROM tiere`, (err, rows) => {
+                if (err) {
+                    res.status(404).send("Fehler in deiner Query Anfrage");
+                } else {
+                    res.json(rows);
+                }
+            });
+        }
+    });
+});
 app.listen(3000);
 
 
